@@ -1,0 +1,144 @@
+{include="header"}
+<!--
+Copyright (C) 2017 Joe Nilson <joenilson at gmail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+<div class="container-fluid">
+    <h1><span class="fa fa-database"></span>&nbsp;Respaldos de Base de Datos&nbsp;<a href='{$fsc->url()}' class='btn btn-sm btn-default'><span class="fa fa-refresh"></span></a></h1>
+    <hr>
+    <div class="row">
+        <div class="col-sm-12">
+            {if="FS_DB_TYPE=='MYSQL'"}
+            <button class="btn btn-sm btn-success" data-toggle="modal" data-target="#nuevo-respaldo">
+                <span class="fa fa-plus"></span>&nbsp;Nuevo Respaldo
+            </button>
+            {else}
+            <div class='alert alert-info text-center'>No se puede realizar un respaldo porque su base de datos no es del tipo Mysql</div>
+            {/if}
+        </div>
+    </div>
+    <div class='table-responsive'>
+        <table class='table table-stripped'>
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>Archivo</th>
+                <th>Tipo</th>
+                <th>Fecha</th>
+                <th>Tamaño</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+                {loop="$fsc->archivos"}
+                <tr>
+                    <td>{$counter+1}</td>
+                    <td>{$value->filename}</td>
+                    <td>{$value->type}</td>
+                    <td>{$value->date}</td>
+                    <td>{$value->size}</td>
+                    <td><a href='{$fsc->publicPath}/{$value->filename}' download class="btn btn-sm btn-success"><span class="fa fa-download"></span>&nbsp;Descargar</a></td>
+                </tr>
+                {else}
+                <tr>
+                    <td colspan='6' class='text-center text-info bg-info'>No hay archivos generados.</td>
+                </tr>
+                {/loop}
+            </tbody>
+        </table>
+    </div>
+</div>
+<!-- Modal -->
+<div class="modal fade" id="nuevo-respaldo" tabindex="-1" role="dialog" aria-labelledby="nuevo-respaldo-titulo">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="nuevo-respaldo-titulo">Nuevo Respaldo</h4>
+            </div>
+            <div class="modal-body">
+                <!-- Indicador de loading -->
+                <div id="fade" style="display: none; position:absolute; top: 0%; left: 0%; width: 100%; height: 100%; background-color: #ababab; z-index: 10001; -moz-opacity: 0.8; opacity: .70; filter: alpha(opacity=80);">
+                </div>
+                <div id="loading-indicator" style="display: none; position: absolute; top: 45%; left: 40%; width: 350px; height: 90px; padding:30px 15px 0px; border: 3px solid #ababab; box-shadow:1px 1px 10px #ababab; border-radius:5px; background-color: white; z-index: 10004; text-align:center; overflow: auto;">
+                    <span id="tarea" class="text-warning"></span><br/>
+                    <img src="plugins/backup_restore/view/images/loading.gif"/>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                <button type="button" id='b_nuevo_backup' class="btn btn-primary"><span class="fa fa-play"></span>&nbsp;Generar Respaldo</button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .panel-heading .accordion-toggle:after {
+        /* symbol for "opening" panels */
+        font-family: 'Glyphicons Halflings';  /* essential for enabling glyphicon */
+        content: "\e114";    /* adjust as needed, taken from bootstrap.css */
+        float: right;        /* adjust as needed */
+        color: grey;         /* adjust as needed */
+    }
+    .panel-heading .accordion-toggle.collapsed:after {
+        /* symbol for "collapsed" panels */
+        content: "\e080";    /* adjust as needed, taken from bootstrap.css */
+    }
+</style>
+<script>
+    var msg_error_db = "Ocurrió un error no contemplado intentando hacer una copia de seguridad de la base de datos, por favor envíe un mensaje en el foro de soporte de FacturaScripts para verificar el problema, gracias.";
+    function crear_backup_db() {
+        $('#fade').show();
+        $('#tarea').html('Procesando backup...');
+        $('#loading-indicator').show();
+        $.ajax({
+            type: 'POST',
+            url: '{$fsc->url()}',
+            async: false,
+            data: 'accion=backupdb',
+            success: function (datos) {
+                $('#fade').hide();
+                $('#loading-indicator').hide();
+                $('#tarea').html('');
+                bootbox.alert({
+                    message: datos.mensaje,
+                    title: '<b>Atención</b>',
+                    callback: function () {
+                        window.location.assign("{$fsc->url()}");
+                    }
+                });
+             },
+             error: function () {
+                $('#fade').hide();
+                $('#loading-indicator').hide();
+                $('#tarea').html('');
+                bootbox.alert({
+                    message: msg_error_db,
+                    title: '<b>Atención</b>'
+                });
+            }
+        });
+    }
+    $(document).ready(function () {
+        $("#b_nuevo_backup").click(function (event) {
+            crear_backup_db();
+        });
+
+        $("#b_eliminar_archivo").click(function (event) {
+            accion_eliminar_archivo();
+        });
+    });
+</script>
+{include="footer"}

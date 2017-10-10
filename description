@@ -1,0 +1,8 @@
+Plugin para generar backups con PHP para FacturaScripts.
+<ul>
+    <li>Solo aplica a Mysql</li>
+</ul>
+
+Pendiente desarrollar la opción para PostgreSQL<br>
+
+<b>Licencia LGPL 3.0</b>
