@@ -49,7 +49,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     <td>{$value->type}</td>
                     <td>{$value->date}</td>
                     <td>{$value->size}</td>
-                    <td><a href='{$fsc->publicPath}/{$value->filename}' download class="btn btn-sm btn-success"><span class="fa fa-download"></span>&nbsp;Descargar</a></td>
+                    <td>
+                        <a href='{$fsc->publicPath}/{$value->filename}' download class="btn btn-sm btn-success"><span class="fa fa-download"></span>&nbsp;Descargar</a>
+                        <a href='#' onClick="accion_eliminar_archivo('{$value->filename}')" class="btn btn-sm btn-danger"><span class="fa fa-trash"></span>&nbsp;Eliminar</a>
+                    </td>
                 </tr>
                 {else}
                 <tr>
@@ -72,9 +75,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                 <!-- Indicador de loading -->
                 <div id="fade" style="display: none; position:absolute; top: 0%; left: 0%; width: 100%; height: 100%; background-color: #ababab; z-index: 10001; -moz-opacity: 0.8; opacity: .70; filter: alpha(opacity=80);">
                 </div>
-                <div id="loading-indicator" style="display: none; position: absolute; top: 45%; left: 40%; width: 350px; height: 90px; padding:30px 15px 0px; border: 3px solid #ababab; box-shadow:1px 1px 10px #ababab; border-radius:5px; background-color: white; z-index: 10004; text-align:center; overflow: auto;">
+                <div id="loading-indicator" style="display: none; position: absolute; top: 45%; left: 40%; width: 350px; height: 350px; padding:30px 15px 0px; border: 3px solid #ababab; box-shadow:1px 1px 10px #ababab; border-radius:5px; background-color: white; z-index: 10004; text-align:center; overflow: auto;">
                     <span id="tarea" class="text-warning"></span><br/>
-                    <img src="plugins/backup_restore/view/images/loading.gif"/>
+                    <img src="plugins/fs_mysqldump_php/view/imagenes/loading.gif"/>
                 </div>
             </div>
             <div class="modal-footer">
@@ -120,12 +123,67 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
                     }
                 });
              },
-             error: function () {
+             error: function (datos) {
                 $('#fade').hide();
                 $('#loading-indicator').hide();
                 $('#tarea').html('');
                 bootbox.alert({
-                    message: msg_error_db,
+                    message: datos.mensaje,
+                    title: '<b>Atención</b>'
+                });
+            }
+        });
+    }
+    
+    function accion_eliminar_archivo(archivo)
+    {
+        bootbox.confirm({
+            message: 'Se va eliminar el backup: '+archivo+', ¿Está seguro de esta acción?, ¡No se podrá recuperar el archivo!',
+            confirm: {
+                label: 'Borrar Backup',
+                className: 'btn-danger'
+            },
+            cancel: {
+                label: 'No Borrar',
+                className: 'btn-default'
+            },
+            callback: function (result) {
+                if(result === true) {
+                    eliminar_archivo(archivo);
+                }
+            }
+        });
+        
+    }
+    
+    function eliminar_archivo(archivo)
+    {
+        $('#fade').show();        
+        $('#tarea').html('Eliminando backup...');
+        $('#loading-indicator').show();
+        $.ajax({
+            type: 'POST',
+            url: '{$fsc->url()}',
+            async: false,
+            data: 'accion=eliminar_archivo&archivo='+archivo,
+            success: function (datos) {
+                $('#fade').hide();
+                $('#loading-indicator').hide();
+                $('#tarea').html('');
+                bootbox.alert({
+                    message: datos.mensaje,
+                    title: '<b>Atención</b>',
+                    callback: function () {
+                        window.location.assign("{$fsc->url()}");
+                    }
+                });
+             },
+             error: function (datos) {
+                $('#fade').hide();
+                $('#loading-indicator').hide();
+                $('#tarea').html('');
+                bootbox.alert({
+                    message: datos.mensaje,
                     title: '<b>Atención</b>'
                 });
             }

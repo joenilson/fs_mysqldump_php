@@ -41,9 +41,24 @@ class fs_respaldo extends fs_controller{
         parent::private_core();
         $this->carpetasRespaldo();        
         if(\filter_input(INPUT_POST, 'accion')){
-            $this->crearRespaldo();
+            $this->realizar_acciones();
         }
         $this->archivos = $this->getFiles($this->exportDir);
+    }
+    
+    public function realizar_acciones()
+    {
+        $accion = \filter_input(INPUT_POST, 'accion');
+        switch ($accion)
+        {
+            case "backupdb":
+                $this->crearRespaldo();
+                break;
+            case "eliminar_archivo":
+                $this->eliminarRespaldo();
+                break;
+        }
+                
     }
     
     public function crearRespaldo()
@@ -72,6 +87,30 @@ class fs_respaldo extends fs_controller{
         echo json_encode(array('success' => true, 'mensaje' => 'Backup generado: ' . $backup));
     }
     
+    public function eliminarRespaldo()
+    {
+        $success = false;
+        $mensaje = "No se pudo eliminar el backup, revise los permisos de la carpeta.";
+        $archivo = \filter_input(INPUT_POST, 'archivo');
+        if(file_exists($this->exportDir. DIRECTORY_SEPARATOR. $archivo))
+        {
+            try {
+                $estatus = unlink($this->exportDir.DIRECTORY_SEPARATOR.$archivo);
+                $success = true;
+                $mensaje = "¡Backup eliminado correctamente!";
+            } catch (Exception $e) {
+                $mensaje = $e->getMessage();
+            }
+        } else {
+           $mensaje = "El archivo indicado no existe."; 
+        }
+        
+        $this->template = false;
+        header('Content-Type: application/json');
+        echo json_encode(array('success' => $success, 'mensaje' => $mensaje));
+        
+    }
+    
     public function carpetasRespaldo()
     {
         $basepath = dirname(dirname(dirname(__DIR__)));
@@ -93,7 +132,6 @@ class fs_respaldo extends fs_controller{
         foreach ($it as $file) {
             if ($file->isFile()) {
                 //verificamos si el archivo ez un zip y si tiene un config.json
-                //$informacion = $this->getConfigFromFile($dir, $file);
                 $archivo = new stdClass();
                 $archivo->filename = $file->getFilename();
                 $archivo->path = $file->getPathName();
@@ -103,7 +141,6 @@ class fs_respaldo extends fs_controller{
                 $archivo->date = date('Y-m-d', filemtime($file->getPathName()));
                 $archivo->type = $file->getExtension();
                 $archivo->file = TRUE;
-                //$archivo->conf = $informacion;
                 $results[] = $archivo;
             } else {
                 continue;
